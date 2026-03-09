@@ -4,3 +4,6 @@
 [submodule "trend-korea-app"]
 	path = trend-korea-app
 	url = https://github.com/kim-yeo-appweb-lab/trend-korea-app.git
+[submodule "trend-korea-admin"]
+	path = trend-korea-admin
+	url = https://github.com/kim-yeo-appweb-lab/trend-korea-admin.git

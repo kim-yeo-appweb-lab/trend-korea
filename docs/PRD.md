@@ -6,6 +6,16 @@
 
 ## 1. 제품 정의 (WHY)
 
+### 1.0 프로젝트 구조
+
+본 서비스는 3개의 독립 프로젝트로 구성된다:
+
+| 디렉토리 | 역할 | 기술 스택 | 상세 PRD |
+|----------|------|----------|----------|
+| `trend-korea-api/` | 백엔드 API | FastAPI + SQLAlchemy 2.0 + PostgreSQL | [`trend-korea-api/docs/PRD.md`](../trend-korea-api/docs/PRD.md) |
+| `trend-korea-app/` | 사용자 프론트엔드 | Next.js 16 + React 19 + TypeScript | [`trend-korea-app/docs/PRD.md`](../trend-korea-app/docs/PRD.md) |
+| `trend-korea-admin/` | 어드민 풀스택 (신규) | Next.js + Prisma + shadcn/ui | [`trend-korea-admin/docs/PRD.md`](../trend-korea-admin/docs/PRD.md) |
+
 ### 1.1 한 줄 정의
 
 대한민국에서 발생하는 사건, 법률 개정, 사회적 특이점을 시간순으로 기록하고, 이슈가 된 사건을 지속 추적하여 제공하는 정보 아카이브 서비스
@@ -307,7 +317,19 @@ RefreshToken — refresh_tokens
 | 린터/포매터    | ruff (line-length=100)                  |
 | 패키지 매니저  | uv                                      |
 
-### 5.3 인프라 (계획)
+### 5.3 어드민
+
+| 레이어         | 기술                                    |
+| -------------- | --------------------------------------- |
+| 프레임워크     | Next.js (App Router, Fullstack)         |
+| 언어           | TypeScript 5.9 (strict mode)            |
+| ORM            | Prisma (introspection)                  |
+| 스타일링       | Tailwind CSS 4                          |
+| UI 라이브러리  | shadcn/ui                               |
+| 인증           | 공유 JWT 검증 (jose)                    |
+| 패키지 매니저  | pnpm                                    |
+
+### 5.4 인프라 (계획)
 
 | 항목           | 기술/서비스                             |
 | -------------- | --------------------------------------- |
@@ -327,40 +349,41 @@ RefreshToken — refresh_tokens
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    사용자 (브라우저)                      │
-└────────────────────────┬────────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────────┐
-│              Next.js 16 (프론트엔드)                     │
-│  ┌──────────────────────────────────────────────┐       │
-│  │  app/ (라우팅) → features/ (도메인) → shared/ │       │
-│  │  8 features: auth, home, timeline, issues,    │       │
-│  │              community, tracking, search,     │       │
-│  │              mypage                           │       │
-│  └──────────────────────────────────────────────┘       │
-│  React Query ──── Zod 검증 ──── shadcn/ui               │
-└────────────────────────┬────────────────────────────────┘
-                         │ REST API (JSON)
-┌────────────────────────▼────────────────────────────────┐
-│               FastAPI (백엔드 API :8000)                  │
-│  ┌──────────────────────────────────────────────┐       │
-│  │  api/v1/ → schemas/ → crud/ → sql/ → models/ │       │
-│  │  13 라우터:                                     │       │
-│  │  auth, users/me, users, events, issues,       │       │
-│  │  triggers, posts/comments, search, tracking,  │       │
-│  │  home, tags, sources, feed                    │       │
-│  └──────────────────────────────────────────────┘       │
-│  JWT 인증 ──── Pydantic V2 ──── SQLAlchemy 2.0          │
-└────────────────────────┬────────────────────────────────┘
-                         │
-          ┌──────────────┼──────────────┐
-          ▼              ▼              ▼
-   ┌────────────┐ ┌────────────┐ ┌────────────┐
-   │ PostgreSQL │ │  OpenAI    │ │ 외부 뉴스  │
-   │    16      │ │  API       │ │ 사이트     │
-   └────────────┘ └────────────┘ └────────────┘
-          ▲
-          │
-┌─────────┴───────────────────────────────────────────────┐
+└────────────┬────────────────────────────────────────────┘
+             │
+     ┌───────┴───────┐
+     ▼               ▼
+┌──────────────┐  ┌──────────────────────────────────────┐
+│ trend-korea- │  │ trend-korea-app (Next.js 16)          │
+│ admin        │  │  ┌────────────────────────────────┐   │
+│ (Next.js     │  │  │  app/ → features/ → shared/    │   │
+│  Fullstack)  │  │  │  8 features: auth, home,       │   │
+│              │  │  │  timeline, issues, community,  │   │
+│ Prisma ORM   │  │  │  tracking, search, mypage      │   │
+│ shadcn/ui    │  │  └────────────────────────────────┘   │
+│ JWT 검증     │  │  React Query ── Zod ── shadcn/ui      │
+│ (jose)       │  └──────────────────┬───────────────────┘
+│              │                     │ REST API (JSON)
+│              │  ┌──────────────────▼───────────────────┐
+│              │  │ trend-korea-api (FastAPI :8000)       │
+│              │  │  ┌────────────────────────────────┐   │
+│              │  │  │  api/v1/ → schemas/ → crud/    │   │
+│              │  │  │  → sql/ → models/              │   │
+│              │  │  │  13 라우터                       │   │
+│              │  │  └────────────────────────────────┘   │
+│              │  │  JWT 발급 ── Pydantic V2 ──           │
+│              │  │  SQLAlchemy 2.0                       │
+│              │  └──────────────────┬───────────────────┘
+│              │                     │
+└──────┬───────┘       ┌─────────────┼──────────────┐
+       │               ▼             ▼              ▼
+       │        ┌────────────┐ ┌────────────┐ ┌────────────┐
+       │        │ PostgreSQL │ │  OpenAI    │ │ 외부 뉴스  │
+       └───────>│    16      │ │  API       │ │ 사이트     │
+  Prisma 직접   └────────────┘ └────────────┘ └────────────┘
+  접근                 ▲
+                       │
+┌──────────────────────┴──────────────────────────────────┐
 │            스케줄러 워커 (trend-korea-worker)             │
 │  APScheduler (BlockingScheduler)                         │
 │  ┌─────────────────────────────────────────────┐        │
@@ -373,6 +396,9 @@ RefreshToken — refresh_tokens
 │  │  - cleanup_refresh_tokens (매일 03:00)       │        │
 │  └─────────────────────────────────────────────┘        │
 └─────────────────────────────────────────────────────────┘
+
+* trend-korea-admin은 PostgreSQL에 Prisma ORM으로 직접 접근한다.
+* JWT 토큰은 trend-korea-api가 발급하고, admin은 jose 라이브러리로 검증만 수행한다.
 ```
 
 ### 6.2 프론트엔드 아키텍처
@@ -679,72 +705,19 @@ models/{domain}.py       # 모델: SQLAlchemy ORM 모델
 
 ## 8. 기능 요구사항 (어드민)
 
-### REQ-AD: 어드민 관리 시스템
+> 어드민 기능은 독립 프로젝트 `trend-korea-admin`으로 분리되었습니다.
+> 상세 명세는 [`trend-korea-admin/docs/PRD.md`](../trend-korea-admin/docs/PRD.md)를 참조하세요.
 
-> 어드민 기능은 `role=admin` 권한을 가진 사용자만 접근 가능하다.
-> 프론트엔드 라우트: `/admin/*` (Phase 2에서 별도 어드민 SPA 또는 (main) 라우트 그룹 내 구현)
+### 요약
 
-#### Feature: 대시보드 (FR-AD1) — P1
-
-- **사용자 스토리**: 어드민으로서 서비스 주요 지표와 최근 활동을 한눈에 확인할 수 있다
-
-| Spec ID | 명세 | 데이터 소스 |
-|---------|------|------------|
-| S-AD1-1 | 어드민이 오늘 등록된 사건/트리거 수, 활성 이슈 수를 확인한다 | `events`, `triggers`, `issues` 집계 |
-| S-AD1-2 | 어드민이 오늘 가입/활성 사용자 수를 확인한다 | `users` 집계 |
-| S-AD1-3 | 어드민이 최근 잡 실행 이력(성공/실패)을 확인한다 | `job_runs` 테이블 |
-| S-AD1-4 | 어드민이 최근 신고된 게시글/댓글 목록을 확인한다 | 신고 테이블 (추가 구현 필요) |
-
-#### Feature: 사건/이슈/트리거 CRUD (FR-AD2) — P0
-
-- **사용자 스토리**: 어드민으로서 사건, 이슈, 트리거를 생성/수정/삭제하여 데이터를 관리할 수 있다
-
-| Spec ID | 명세 | API 엔드포인트 |
-|---------|------|---------------|
-| S-AD2-1 | 어드민이 사건을 생성한다 (제목, 요약, 중요도, 태그, 출처) | `POST /api/v1/events` |
-| S-AD2-2 | 어드민이 사건을 수정한다 | `PATCH /api/v1/events/{id}` |
-| S-AD2-3 | 어드민이 사건을 삭제한다 | `DELETE /api/v1/events/{id}` |
-| S-AD2-4 | 어드민이 이슈를 생성한다 (제목, 설명, 상태, 태그, 관련 사건) | `POST /api/v1/issues` |
-| S-AD2-5 | 어드민이 이슈를 수정한다 | `PATCH /api/v1/issues/{id}` |
-| S-AD2-6 | 어드민이 이슈를 삭제한다 | `DELETE /api/v1/issues/{id}` |
-| S-AD2-7 | 어드민이 트리거를 생성한다 (이슈 선택, 요약, 유형, 출처) | `POST /api/v1/issues/{id}/triggers` |
-| S-AD2-8 | 어드민이 트리거를 수정한다 | `PATCH /api/v1/triggers/{id}` |
-| S-AD2-9 | 어드민이 트리거를 삭제한다 | `DELETE /api/v1/triggers/{id}` |
-
-#### Feature: 태그/출처 관리 (FR-AD3) — P0
-
-| Spec ID | 명세 | API 엔드포인트 |
-|---------|------|---------------|
-| S-AD3-1 | 어드민이 태그를 생성한다 (이름, 유형, slug) | `POST /api/v1/tags` |
-| S-AD3-2 | 어드민이 태그를 수정한다 | `PATCH /api/v1/tags/{id}` |
-| S-AD3-3 | 어드민이 태그를 삭제한다 | `DELETE /api/v1/tags/{id}` |
-| S-AD3-4 | 어드민이 출처를 추가한다 (엔티티 연결, URL, 제목, 매체명) | `POST /api/v1/sources` |
-| S-AD3-5 | 어드민이 출처를 삭제한다 | `DELETE /api/v1/sources/{id}` |
-
-#### Feature: 사용자 관리 (FR-AD4) — P1
-
-| Spec ID | 명세 | API 엔드포인트 |
-|---------|------|---------------|
-| S-AD4-1 | 어드민이 사용자 목록을 조회한다 (닉네임, 이메일, 역할, 상태) | `GET /api/v1/users/{id}` (확장 필요) |
-| S-AD4-2 | 어드민이 사용자 역할을 변경한다 (member ↔ admin) | 추가 구현 필요 |
-| S-AD4-3 | 어드민이 사용자를 정지/복원한다 (`is_active` 토글) | 추가 구현 필요 |
-
-#### Feature: 커뮤니티 모더레이션 (FR-AD5) — P1
-
-| Spec ID | 명세 | API 엔드포인트 |
-|---------|------|---------------|
-| S-AD5-1 | 어드민이 게시글을 삭제한다 (작성자와 무관하게) | `DELETE /api/v1/posts/{id}` (admin 권한) |
-| S-AD5-2 | 어드민이 댓글을 삭제한다 | `DELETE /api/v1/comments/{id}` (admin 권한) |
-| S-AD5-3 | 어드민이 신고된 콘텐츠를 검토한다 | 신고 시스템 추가 구현 필요 |
-
-#### Feature: 데이터 파이프라인 모니터링 (FR-AD6) — P1
-
-| Spec ID | 명세 | 데이터 소스 |
-|---------|------|------------|
-| S-AD6-1 | 어드민이 최근 뉴스 수집 결과를 확인한다 (수집 기사 수, 요약 수, 분류 결과) | `job_runs` WHERE job_name='news_collect' |
-| S-AD6-2 | 어드민이 실패한 잡과 에러 로그를 확인한다 | `job_runs` WHERE status='failed' |
-| S-AD6-3 | 어드민이 키워드 상태(active/cooldown/closed)를 확인한다 | `issue_keyword_states` |
-| S-AD6-4 | 어드민이 수동으로 뉴스 수집 사이클을 트리거한다 | 추가 API 구현 필요 |
+| Feature | 설명 | 우선순위 |
+|---------|------|---------|
+| FR-AD1 | 대시보드 — 주요 지표 및 최근 활동 | P1 |
+| FR-AD2 | 사건/이슈/트리거 CRUD | P0 |
+| FR-AD3 | 태그/출처 관리 | P0 |
+| FR-AD4 | 사용자 관리 | P1 |
+| FR-AD5 | 커뮤니티 모더레이션 | P1 |
+| FR-AD6 | 데이터 파이프라인 모니터링 | P1 |
 
 ---
 
@@ -822,6 +795,8 @@ models/{domain}.py       # 모델: SQLAlchemy ORM 모델
 
 ### 10.2 엔드포인트 매핑
 
+> **참고**: `admin` 권한이 필요한 CUD(Create/Update/Delete) 엔드포인트는 `trend-korea-admin`의 Next.js Route Handlers로 이관되었습니다. 어드민 앱은 Prisma ORM으로 PostgreSQL에 직접 접근하므로, 아래 API 엔드포인트 중 "(→ trend-korea-admin)" 표시된 항목은 사용자 앱에서는 호출하지 않습니다.
+
 #### 인증 (auth)
 
 | 메서드 | 경로 | 설명 | 인증 |
@@ -854,9 +829,9 @@ models/{domain}.py       # 모델: SQLAlchemy ORM 모델
 | `GET` | `/events/{id}` | 사건 상세 | 불필요 |
 | `POST` | `/events/{id}/save` | 사건 저장 | member |
 | `DELETE` | `/events/{id}/save` | 사건 저장 해제 | member |
-| `POST` | `/events` | 사건 생성 | admin |
-| `PATCH` | `/events/{id}` | 사건 수정 | admin |
-| `DELETE` | `/events/{id}` | 사건 삭제 | admin |
+| `POST` | `/events` | 사건 생성 | admin (→ trend-korea-admin) |
+| `PATCH` | `/events/{id}` | 사건 수정 | admin (→ trend-korea-admin) |
+| `DELETE` | `/events/{id}` | 사건 삭제 | admin (→ trend-korea-admin) |
 
 #### 이슈 (issues)
 
@@ -864,11 +839,11 @@ models/{domain}.py       # 모델: SQLAlchemy ORM 모델
 |--------|------|------|------|
 | `GET` | `/issues` | 이슈 목록 | 불필요 |
 | `GET` | `/issues/{id}` | 이슈 상세 | 불필요 |
-| `POST` | `/issues` | 이슈 생성 | admin |
-| `PATCH` | `/issues/{id}` | 이슈 수정 | admin |
-| `DELETE` | `/issues/{id}` | 이슈 삭제 | admin |
+| `POST` | `/issues` | 이슈 생성 | admin (→ trend-korea-admin) |
+| `PATCH` | `/issues/{id}` | 이슈 수정 | admin (→ trend-korea-admin) |
+| `DELETE` | `/issues/{id}` | 이슈 삭제 | admin (→ trend-korea-admin) |
 | `GET` | `/issues/{id}/triggers` | 이슈 트리거 목록 | 불필요 |
-| `POST` | `/issues/{id}/triggers` | 트리거 생성 | admin |
+| `POST` | `/issues/{id}/triggers` | 트리거 생성 | admin (→ trend-korea-admin) |
 | `GET` | `/issues/{id}/timeline` | 이슈 타임라인 | 불필요 |
 | `POST` | `/issues/{id}/track` | 이슈 추적 등록 | member |
 | `DELETE` | `/issues/{id}/track` | 이슈 추적 해제 | member |
@@ -877,8 +852,8 @@ models/{domain}.py       # 모델: SQLAlchemy ORM 모델
 
 | 메서드 | 경로 | 설명 | 인증 |
 |--------|------|------|------|
-| `PATCH` | `/triggers/{id}` | 트리거 수정 | admin |
-| `DELETE` | `/triggers/{id}` | 트리거 삭제 | admin |
+| `PATCH` | `/triggers/{id}` | 트리거 수정 | admin (→ trend-korea-admin) |
+| `DELETE` | `/triggers/{id}` | 트리거 삭제 | admin (→ trend-korea-admin) |
 
 #### 커뮤니티 (posts / comments)
 
@@ -890,12 +865,12 @@ models/{domain}.py       # 모델: SQLAlchemy ORM 모델
 | `POST` | `/posts` | 게시글 작성 | member |
 | `GET` | `/posts/{id}` | 게시글 상세 | 불필요 |
 | `PATCH` | `/posts/{id}` | 게시글 수정 | member (본인) |
-| `DELETE` | `/posts/{id}` | 게시글 삭제 | member (본인) / admin |
+| `DELETE` | `/posts/{id}` | 게시글 삭제 | member (본인) / admin (→ trend-korea-admin) |
 | `GET` | `/posts/{id}/comments` | 댓글 목록 | 불필요 |
 | `POST` | `/posts/{id}/comments` | 댓글 작성 | member |
 | `POST` | `/posts/{id}/like` | 게시글 추천/비추천 | member |
 | `PATCH` | `/comments/{id}` | 댓글 수정 | member (본인) |
-| `DELETE` | `/comments/{id}` | 댓글 삭제 | member (본인) / admin |
+| `DELETE` | `/comments/{id}` | 댓글 삭제 | member (본인) / admin (→ trend-korea-admin) |
 | `POST` | `/comments/{id}/like` | 댓글 좋아요 | member |
 | `DELETE` | `/comments/{id}/like` | 댓글 좋아요 취소 | member |
 
@@ -934,12 +909,12 @@ models/{domain}.py       # 모델: SQLAlchemy ORM 모델
 | 메서드 | 경로 | 설명 | 인증 |
 |--------|------|------|------|
 | `GET` | `/tags` | 태그 목록 | 불필요 |
-| `POST` | `/tags` | 태그 생성 | admin |
-| `PATCH` | `/tags/{id}` | 태그 수정 | admin |
-| `DELETE` | `/tags/{id}` | 태그 삭제 | admin |
+| `POST` | `/tags` | 태그 생성 | admin (→ trend-korea-admin) |
+| `PATCH` | `/tags/{id}` | 태그 수정 | admin (→ trend-korea-admin) |
+| `DELETE` | `/tags/{id}` | 태그 삭제 | admin (→ trend-korea-admin) |
 | `GET` | `/sources` | 출처 목록 (entity_type/entity_id 필터) | 불필요 |
-| `POST` | `/sources` | 출처 추가 | admin |
-| `DELETE` | `/sources/{id}` | 출처 삭제 | admin |
+| `POST` | `/sources` | 출처 추가 | admin (→ trend-korea-admin) |
+| `DELETE` | `/sources/{id}` | 출처 삭제 | admin (→ trend-korea-admin) |
 
 #### 피드 (feed)
 
@@ -999,7 +974,7 @@ models/{domain}.py       # 모델: SQLAlchemy ORM 모델
 /mypage/edit                   # 회원 정보 수정
 /login                         # 로그인
 /register                      # 회원가입
-/admin/*                       # 어드민 (Phase 2)
+/admin/*                       # 어드민 (→ trend-korea-admin 별도 앱)
 ```
 
 ### 12.2 페이지 간 연결 구조
@@ -1143,11 +1118,16 @@ trend-korea/                     # 루트 (이 PRD가 위치)
 │   │   └── core/                # 설정, 로깅
 │   ├── migrations/              # Alembic
 │   └── tests/
-└── trend-korea-app/             # 프론트엔드 (Next.js)
+├── trend-korea-app/             # 프론트엔드 (Next.js)
+│   └── src/
+│       ├── app/                 # 라우팅
+│       ├── features/            # 도메인 기능 (8개)
+│       └── shared/              # 공유 모듈
+└── trend-korea-admin/           # 어드민 (Next.js Fullstack)
     └── src/
-        ├── app/                 # 라우팅
-        ├── features/            # 도메인 기능 (8개)
-        └── shared/              # 공유 모듈
+        ├── app/                 # App Router (라우팅 + Route Handlers)
+        ├── lib/                 # Prisma 클라이언트, 인증 등
+        └── components/          # UI 컴포넌트
 ```
 
 ### Git Workflow
@@ -1170,18 +1150,18 @@ trend-korea/                     # 루트 (이 PRD가 위치)
 - [x] 내 추적 (추적 이슈/저장 사건 모아보기)
 - [x] MY 페이지 (프로필, SNS 연동, 계정 관리)
 - [x] 인증 (이메일 + SNS 로그인/회원가입)
-- [x] 백엔드 API 64개 엔드포인트
+- [x] 백엔드 API 66개 엔드포인트
 - [x] 뉴스 수집 파이프라인 (키워드 → 크롤링 → 분류 → 요약 → 피드)
 - [x] 스케줄러 워커 (6개 잡)
-- [ ] 어드민: 사건/이슈/트리거 CRUD (기존 admin API 활용)
-- [ ] 어드민: 태그/출처 CRUD (기존 admin API 활용)
+- [ ] 어드민: 사건/이슈/트리거 CRUD → trend-korea-admin 프로젝트로 이관
+- [ ] 어드민: 태그/출처 CRUD → trend-korea-admin 프로젝트로 이관
 
 ### Phase 2: 개선
 
-- [ ] 어드민 대시보드 (지표, 최근 활동)
-- [ ] 어드민 사용자 관리 (역할 변경, 정지)
-- [ ] 어드민 커뮤니티 모더레이션 (신고 시스템)
-- [ ] 어드민 파이프라인 모니터링 UI
+- [ ] 어드민 대시보드 (지표, 최근 활동) → trend-korea-admin 프로젝트로 이관
+- [ ] 어드민 사용자 관리 (역할 변경, 정지) → trend-korea-admin 프로젝트로 이관
+- [ ] 어드민 커뮤니티 모더레이션 (신고 시스템) → trend-korea-admin 프로젝트로 이관
+- [ ] 어드민 파이프라인 모니터링 UI → trend-korea-admin 프로젝트로 이관
 - [ ] 실시간 피드 개선 (WebSocket/SSE)
 - [ ] 알림 시스템 (푸시/이메일)
 - [ ] 게시글 이미지 첨부
@@ -1223,8 +1203,8 @@ trend-korea/                     # 루트 (이 PRD가 위치)
 |------|------|------|
 | 배포 인프라 (VPS vs Cloud Run 등) | 미결정 | MVP 완료 후 결정 |
 | CI/CD 파이프라인 | 미결정 | GitHub Actions 유력 |
-| 어드민 UI 구현 방식 | 미결정 | 별도 SPA vs 기존 앱 내 라우트 |
-| 신고 시스템 데이터 모델 | 미구현 | Phase 2에서 설계 |
+| 어드민 UI 구현 방식 | **결정됨** | `trend-korea-admin` 별도 Next.js 풀스택 앱 (Prisma + shadcn/ui) |
+| 신고 시스템 데이터 모델 | **결정됨** | `trend-korea-admin/docs/PRD.md` Section 5.4 `reports` 테이블 참조 |
 | Rate Limiting 정책 | 미결정 | 인증 엔드포인트 우선 적용 |
 | 이미지 업로드 스토리지 | 미결정 | S3 / Cloudflare R2 등 |
 | 모니터링/알림 도구 | 미결정 | Sentry, Grafana 등 |
