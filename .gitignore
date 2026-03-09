@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# AI
+.claude/agent-memory/
+.serena/
+.omc/
+
+# Misc
+*.log
+tmp/
