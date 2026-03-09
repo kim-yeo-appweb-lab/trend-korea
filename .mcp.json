@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "shrimp-task-manager": {
+      "command": "node",
+      "args": ["/Users/changyu/Base/@local-mcp/mcp-shrimp-task-manager/dist/index.js"],
+      "env": {
+        "DATA_DIR": "/Users/changyu/Base/kim-yeo-appweb-lab/trend-korea/shrimp_data",
+        "TEMPLATES_USE": "ko",
+        "ENABLE_GUI": "true"
+      }
+    },
+    "playwright": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["@playwright/mcp@latest"],
+			"env": {}
+		},
+    "sequential-thinking": {
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+		}
+  }
+}
